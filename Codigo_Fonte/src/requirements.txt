@@ -1,0 +1,5 @@
+# Dependências principais do Fácil Click V1.2.5.
+# Versões fixadas para manter compatibilidade com o Python 3.10.11.
+Pillow==11.3.0
+pyttsx3==2.99
+pywebview==6.2.1

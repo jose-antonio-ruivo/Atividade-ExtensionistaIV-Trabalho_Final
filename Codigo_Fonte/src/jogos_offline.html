@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jogos Fácil Click</title>
+<style>
+/* --------------------------------------------------------------------------
+   VARIÁVEIS VISUAIS
+   As propriedades CSS personalizadas centralizam cores e dimensões usadas em
+   todos os jogos. O clamp mantém as cartas legíveis em diferentes resoluções.
+   -------------------------------------------------------------------------- */
+:root {
+  --azul:#246b9e; --verde:#237a4b; --vermelho:#bd352c; --amarelo:#f1c40f;
+  --fundo:#0d3b2e; --painel:#f4f7f9; --texto:#17202a;
+  --carta-w:clamp(66px,4.8vw,90px); --carta-h:calc(var(--carta-w) * 1.38);
+}
+/* Reinício básico de layout para que largura e altura incluam bordas. */
+* { box-sizing:border-box; }
+html,body { width:100%; height:100%; margin:0; overflow:hidden; }
+body { font-family:"Segoe UI",Arial,sans-serif; background:var(--fundo); color:#fff; }
+button { font:inherit; }
+/* Barra permanente com retorno ao menu e reinício do jogo. */
+#barra {
+  height:92px; display:flex; align-items:center; gap:16px; padding:12px 18px;
+  background:#17202a; border-bottom:4px solid #3498db; box-shadow:0 4px 12px #0008;
+}
+.botao-barra {
+  min-height:62px; padding:0 26px; border:3px solid #ffffffcc; border-radius:12px;
+  color:#fff; font-size:20px; font-weight:800; cursor:pointer; box-shadow:0 3px 8px #0006;
+}
+.botao-barra:focus,.acao:focus,.tile:focus,.celula-mina:focus,.playing-card:focus {
+  outline:5px solid #ffd54f; outline-offset:2px;
+}
+#voltar { background:var(--vermelho); }
+#novo { background:var(--verde); }
+#titulo { flex:1; text-align:center; font-size:28px; font-weight:800; }
+#conteudo { height:calc(100% - 92px); padding:14px 20px 18px; overflow:auto; }
+.painel-jogo { min-height:100%; max-width:1800px; margin:auto; }
+.instrucoes {
+  display:flex; align-items:center; justify-content:space-between; gap:18px;
+  padding:10px 18px; margin-bottom:12px; border-radius:12px;
+  background:#ffffffed; color:var(--texto); font-size:18px; font-weight:650;
+}
+#status { color:#9b241d; font-weight:800; text-align:right; }
+.acao {
+  min-height:50px; padding:8px 18px; border:0; border-radius:10px;
+  background:#286e9e; color:#fff; font-size:18px; font-weight:800; cursor:pointer;
+}
+/* Área comum usada como mesa dos quatro jogos. */
+.mesa { position:relative; min-height:610px; padding:14px; border-radius:14px; background:#14533f; }
+/* Carta reutilizada pela Paciência e pelo FreeCell. */
+.playing-card {
+  width:var(--carta-w); height:var(--carta-h); border:2px solid #263238; border-radius:9px;
+  background:#fff; color:#111; font-size:clamp(24px,2vw,34px); font-weight:800;
+  line-height:1; cursor:pointer; box-shadow:0 3px 6px #0006; user-select:none;
+}
+.playing-card.vermelha { color:#c62828; }
+.playing-card.fechada {
+  color:transparent; border:5px solid #dbe9f4;
+  background:repeating-linear-gradient(45deg,#1c5d99 0 8px,#fff 8px 11px);
+}
+.playing-card.selecionada { outline:6px solid #ffd54f; transform:translateY(-4px); }
+.playing-card .naipe { display:block; margin-top:8px; font-size:.85em; }
+.zona-topo { display:flex; gap:16px; align-items:flex-start; margin-bottom:18px; min-height:calc(var(--carta-h) + 8px); }
+.espacador { flex:1; }
+.slot {
+  width:var(--carta-w); height:var(--carta-h); border:3px dashed #ffffff99;
+  border-radius:10px; display:flex; align-items:center; justify-content:center;
+  color:#ffffffcc; font-size:18px; font-weight:800; cursor:pointer;
+}
+.slot.stock { background:#164b79; border-style:solid; font-size:32px; }
+.tableau { display:grid; gap:14px; min-height:470px; }
+.tableau.sete { grid-template-columns:repeat(7,1fr); }
+.tableau.oito { grid-template-columns:repeat(8,1fr); }
+.coluna {
+  position:relative; min-width:var(--carta-w); min-height:460px;
+  border-radius:10px; border:2px dashed #ffffff40; cursor:pointer;
+}
+.coluna .playing-card { position:absolute; left:50%; transform:translateX(-50%); }
+.coluna .playing-card.selecionada { transform:translateX(-50%) translateY(-4px); }
+.rotulo-slot { position:absolute; font-size:14px; opacity:.7; pointer-events:none; }
+/* Grade e peças do jogo de pares inspirado em Mahjong. */
+.grade-mahjong {
+  display:grid; grid-template-columns:repeat(6,minmax(90px,145px));
+  gap:16px; justify-content:center; padding:28px;
+}
+.tile {
+  height:110px; border:4px solid #d6b35a; border-radius:16px;
+  background:#fffbe8; color:#183d34; font-size:48px; font-weight:900;
+  cursor:pointer; box-shadow:0 7px 0 #8c6d27,0 10px 15px #0006;
+}
+.tile.selecionada { outline:7px solid #2da8ff; transform:translateY(-5px); }
+.tile.removida { visibility:hidden; }
+/* Grade 9 x 9 do Campo Minado. */
+.grade-minas {
+  display:grid; grid-template-columns:repeat(9,58px); gap:5px;
+  justify-content:center; padding:18px;
+}
+.celula-mina {
+  width:58px; height:58px; border:3px outset #d8e2e8; border-radius:7px;
+  background:#c9d4db; color:#17202a; font-size:27px; font-weight:900; cursor:pointer;
+}
+.celula-mina.aberta { border:2px solid #8d9aa3; background:#f5f7f8; cursor:default; }
+.celula-mina.mina { background:#ef5350; }
+.n1{color:#1565c0}.n2{color:#2e7d32}.n3{color:#c62828}.n4{color:#4527a0}
+.n5{color:#8e241b}.n6{color:#00838f}.n7{color:#111}.n8{color:#555}
+.controles-minas { display:flex; justify-content:center; gap:16px; margin:12px; }
+.modo-ativo { background:#b36b00; outline:4px solid #ffd54f; }
+/* Ajustes responsivos para telas com menor largura. */
+@media (max-width:1300px) {
+  :root { --carta-w:66px; }
+  .botao-barra { font-size:17px; padding:0 16px; }
+  #titulo { font-size:23px; }
+  .tableau { gap:8px; }
+  .grade-mahjong { grid-template-columns:repeat(6,minmax(76px,115px)); gap:10px; }
+  .tile { height:92px; }
+}
+</style>
+</head>
+<body>
+<header id="barra">
+  <button id="voltar" class="botao-barra">⟵ VOLTAR AO FÁCIL CLICK</button>
+  <div id="titulo">Jogos Fácil Click</div>
+  <button id="novo" class="botao-barra">↻ NOVO JOGO</button>
+</header>
+<main id="conteudo"><section id="jogo" class="painel-jogo"></section></main>
+<script>
+"use strict";
+
+/* --------------------------------------------------------------------------
+   ESTADO GLOBAL E ELEMENTOS COMPARTILHADOS
+   O controlador Python substitui __JOGO_INICIAL__ antes de abrir esta página.
+   -------------------------------------------------------------------------- */
+const JOGO_INICIAL = __JOGO_INICIAL__;
+const NOMES = {
+  paciencia:"Paciência", freecell:"FreeCell", mahjong:"Mahjong", campo_minado:"Campo Minado"
+};
+let jogoAtual = JOGO_INICIAL;
+let reiniciarAtual = () => {};
+const jogoEl = document.getElementById("jogo");
+const tituloEl = document.getElementById("titulo");
+
+// Chama o método Python exposto pela API do pywebview.
+document.getElementById("voltar").addEventListener("click", () => {
+  if (window.pywebview && window.pywebview.api) window.pywebview.api.voltar_facil_click();
+});
+// Cada jogo registra sua própria função em reiniciarAtual.
+document.getElementById("novo").addEventListener("click", () => reiniciarAtual());
+
+/** Embaralhamento Fisher–Yates: troca cada item com uma posição aleatória. */
+function embaralhar(lista) {
+  for (let i=lista.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1)); [lista[i],lista[j]]=[lista[j],lista[i]];
+  }
+  return lista;
+}
+/** Cria a estrutura comum de instruções, status e mesa. */
+function estrutura(instrucao) {
+  jogoEl.innerHTML=`<div class="instrucoes"><span>${instrucao}</span><span id="status"></span></div><div id="mesa" class="mesa"></div>`;
+  return document.getElementById("mesa");
+}
+/** Atualiza a mensagem exibida no canto direito das instruções. */
+function status(texto) { const el=document.getElementById("status"); if(el) el.textContent=texto||""; }
+
+/** Gera as 52 cartas e devolve o baralho embaralhado. */
+function cartaBaralho() {
+  const naipes=["S","H","D","C"], cartas=[]; let id=0;
+  for (const naipe of naipes) for (let valor=1;valor<=13;valor++)
+    cartas.push({id:id++,naipe,valor,virada:true});
+  return embaralhar(cartas);
+}
+// Funções puras de apoio às regras dos jogos de cartas.
+const simbolo={S:"♠",H:"♥",D:"♦",C:"♣"};
+const nomeValor=v=>({1:"A",11:"J",12:"Q",13:"K"}[v]||String(v));
+const vermelha=c=>c.naipe==="H"||c.naipe==="D";
+const alternada=(a,b)=>vermelha(a)!==vermelha(b);
+/** Converte um objeto-carta em um botão visual e acessível. */
+function botaoCarta(carta, selecionada=false) {
+  const b=document.createElement("button");
+  b.className="playing-card"+(carta.virada?"":" fechada")+(carta.virada&&vermelha(carta)?" vermelha":"")+(selecionada?" selecionada":"");
+  b.innerHTML=carta.virada?`${nomeValor(carta.valor)}<span class="naipe">${simbolo[carta.naipe]}</span>`:"";
+  b.setAttribute("aria-label",carta.virada?`${nomeValor(carta.valor)} de ${simbolo[carta.naipe]}`:"Carta fechada");
+  return b;
+}
+/** Confirma ordem decrescente, cores alternadas e cartas viradas. */
+function sequenciaValida(cartas) {
+  for(let i=0;i<cartas.length-1;i++)
+    if(cartas[i].valor!==cartas[i+1].valor+1||!alternada(cartas[i],cartas[i+1])) return false;
+  return cartas.every(c=>c.virada);
+}
+/** Verifica se a carta é a próxima esperada na fundação do mesmo naipe. */
+function baseFundacao(fundacoes,carta) {
+  const pilha=fundacoes[carta.naipe];
+  return pilha.length===carta.valor-1;
+}
+
+// ----------------------------- PACIÊNCIA -----------------------------
+function iniciarPaciencia() {
+  tituloEl.textContent="Paciência — Fácil Click";
+  const mesa=estrutura("Monte sequências decrescentes alternando vermelho e preto. Complete os quatro montes do Ás ao Rei.");
+  // Estado da partida: sete colunas, estoque, descarte e quatro fundações.
+  let baralho=cartaBaralho(), colunas=Array.from({length:7},()=>[]), estoque=[], descarte=[];
+  const fundacoes={S:[],H:[],D:[],C:[]}; let selecao=null;
+  // Distribuição clássica: a coluna 1 recebe uma carta; a coluna 7 recebe sete.
+  for(let c=0;c<7;c++) for(let n=0;n<=c;n++) {
+    const carta=baralho.pop(); carta.virada=n===c; colunas[c].push(carta);
+  }
+  estoque=baralho.map(c=>({...c,virada:false}));
+
+  // Normaliza a seleção: qualquer origem devolve sempre uma lista de cartas.
+  const cartasSelecionadas=()=>{
+    if(!selecao)return[];
+    if(selecao.tipo==="coluna")return colunas[selecao.coluna].slice(selecao.indice);
+    if(selecao.tipo==="descarte")return descarte.length?[descarte.at(-1)]:[];
+    if(selecao.tipo==="fundacao")return fundacoes[selecao.naipe].length?[fundacoes[selecao.naipe].at(-1)]:[];
+    return[];
+  };
+  // Remove as cartas da origem somente depois que o destino foi validado.
+  function removerSelecao() {
+    if(selecao.tipo==="coluna") {
+      colunas[selecao.coluna].splice(selecao.indice);
+      const topo=colunas[selecao.coluna].at(-1); if(topo)topo.virada=true;
+    } else if(selecao.tipo==="descarte") descarte.pop();
+    else if(selecao.tipo==="fundacao") fundacoes[selecao.naipe].pop();
+  }
+  // Move uma carta ou sequência para outra coluna conforme as regras.
+  function moverColuna(destino) {
+    const movendo=cartasSelecionadas(); if(!movendo.length)return;
+    const topo=colunas[destino].at(-1), primeira=movendo[0];
+    const permitido=topo?(topo.virada&&topo.valor===primeira.valor+1&&alternada(topo,primeira)):primeira.valor===13;
+    if(!permitido){status("Movimento não permitido.");return;}
+    removerSelecao(); colunas[destino].push(...movendo); selecao=null; status(""); render();
+  }
+  // A fundação aceita apenas uma carta por vez, em ordem crescente.
+  function moverFundacao(naipe) {
+    const movendo=cartasSelecionadas();
+    if(movendo.length!==1||movendo[0].naipe!==naipe||!baseFundacao(fundacoes,movendo[0])) {
+      status("A fundação recebe cartas do Ás ao Rei, do mesmo naipe."); return;
+    }
+    removerSelecao(); fundacoes[naipe].push(movendo[0]); selecao=null; status(""); render(); verificarVitoria();
+  }
+  function verificarVitoria() {
+    if(Object.values(fundacoes).every(p=>p.length===13)) status("Parabéns! Você venceu!");
+  }
+  // Renderização por reconstrução: limpa a mesa e recria os elementos a partir
+  // do estado atual. Esse modelo simplifica a sincronização visual.
+  function render() {
+    mesa.innerHTML="";
+    const topo=document.createElement("div"); topo.className="zona-topo";
+    const stock=document.createElement("button"); stock.className="slot stock"; stock.textContent=estoque.length?"▩":"↺";
+    stock.setAttribute("aria-label",estoque.length?"Comprar carta":"Repor cartas");
+    stock.onclick=()=>{
+      selecao=null;
+      if(estoque.length){const c=estoque.pop();c.virada=true;descarte.push(c);}
+      else {estoque=descarte.reverse().map(c=>({...c,virada:false}));descarte=[];}
+      render();
+    };
+    topo.appendChild(stock);
+    const waste=document.createElement("div"); waste.className="slot";
+    if(descarte.length) {
+      const c=descarte.at(-1), b=botaoCarta(c,selecao?.tipo==="descarte");
+      b.onclick=()=>{selecao={tipo:"descarte"};status("Carta selecionada.");render();}; waste.appendChild(b);
+    } else waste.textContent="Vazio";
+    topo.appendChild(waste);
+    const esp=document.createElement("div");esp.className="espacador";topo.appendChild(esp);
+    for(const n of ["S","H","D","C"]) {
+      const slot=document.createElement("div");slot.className="slot";slot.onclick=()=>moverFundacao(n);
+      const c=fundacoes[n].at(-1);
+      if(c){const b=botaoCarta(c,selecao?.tipo==="fundacao"&&selecao.naipe===n);b.onclick=e=>{e.stopPropagation();selecao={tipo:"fundacao",naipe:n};render();};slot.appendChild(b);}
+      else slot.textContent=simbolo[n];
+      topo.appendChild(slot);
+    }
+    mesa.appendChild(topo);
+    const tab=document.createElement("div");tab.className="tableau sete";
+    colunas.forEach((col,ci)=>{
+      const el=document.createElement("div");el.className="coluna";el.onclick=()=>moverColuna(ci);
+      col.forEach((c,i)=>{
+        const b=botaoCarta(c,selecao?.tipo==="coluna"&&selecao.coluna===ci&&i>=selecao.indice);
+        b.style.top=(i*34)+"px";
+        b.onclick=e=>{
+          e.stopPropagation();
+          if(!c.virada){if(i===col.length-1){c.virada=true;render();}return;}
+          if(selecao){moverColuna(ci);return;}
+          const trecho=col.slice(i);
+          if(sequenciaValida(trecho)){selecao={tipo:"coluna",coluna:ci,indice:i};status("Carta selecionada.");render();}
+        };
+        b.ondblclick=e=>{e.stopPropagation();selecao={tipo:"coluna",coluna:ci,indice:i};moverFundacao(c.naipe);};
+        el.appendChild(b);
+      });
+      tab.appendChild(el);
+    });
+    mesa.appendChild(tab);
+  }
+  reiniciarAtual=iniciarPaciencia; render();
+}
+
+// ------------------------------ FREECELL ------------------------------
+function iniciarFreeCell() {
+  tituloEl.textContent="FreeCell — Fácil Click";
+  const mesa=estrutura("Use as quatro células livres. Organize as colunas em ordem decrescente e complete as fundações.");
+  // O FreeCell usa oito colunas, quatro células livres e quatro fundações.
+  const colunas=Array.from({length:8},()=>[]), livres=[null,null,null,null], fundacoes={S:[],H:[],D:[],C:[]};
+  cartaBaralho().forEach((c,i)=>colunas[i%8].push(c));
+  let selecao=null;
+  const selecionadas=()=>{
+    if(!selecao)return[];
+    if(selecao.tipo==="coluna")return colunas[selecao.coluna].slice(selecao.indice);
+    if(selecao.tipo==="livre")return livres[selecao.indice]?[livres[selecao.indice]]:[];
+    if(selecao.tipo==="fundacao")return fundacoes[selecao.naipe].length?[fundacoes[selecao.naipe].at(-1)]:[];
+    return[];
+  };
+  function remover() {
+    if(selecao.tipo==="coluna")colunas[selecao.coluna].splice(selecao.indice);
+    else if(selecao.tipo==="livre")livres[selecao.indice]=null;
+    else if(selecao.tipo==="fundacao")fundacoes[selecao.naipe].pop();
+  }
+  // Limite teórico de cartas móveis: (células livres + 1) × 2^(colunas vazias).
+  function capacidade(destino) {
+    const livresVazios=livres.filter(x=>!x).length;
+    let colunasVazias=colunas.filter((c,i)=>!c.length&&i!==destino).length;
+    return (livresVazios+1)*Math.pow(2,colunasVazias);
+  }
+  function moverColuna(destino) {
+    const mov=selecionadas();if(!mov.length)return;
+    const topo=colunas[destino].at(-1),primeira=mov[0];
+    if(mov.length>capacidade(destino)){status("Use mais células ou colunas vazias para mover essa sequência.");return;}
+    if(topo&&!(topo.valor===primeira.valor+1&&alternada(topo,primeira))){status("A sequência deve alternar as cores.");return;}
+    remover();colunas[destino].push(...mov);selecao=null;status("");render();
+  }
+  function moverLivre(indice) {
+    if(!selecao){if(livres[indice]){selecao={tipo:"livre",indice};render();}return;}
+    const mov=selecionadas();
+    if(livres[indice]||mov.length!==1){status("A célula livre recebe somente uma carta.");return;}
+    remover();livres[indice]=mov[0];selecao=null;status("");render();
+  }
+  function moverFundacao(naipe) {
+    const mov=selecionadas();
+    if(mov.length!==1||mov[0].naipe!==naipe||!baseFundacao(fundacoes,mov[0])){status("Movimento não permitido na fundação.");return;}
+    remover();fundacoes[naipe].push(mov[0]);selecao=null;status("");render();
+    if(Object.values(fundacoes).every(p=>p.length===13))status("Parabéns! Você venceu!");
+  }
+  function render() {
+    mesa.innerHTML="";
+    const topo=document.createElement("div");topo.className="zona-topo";
+    livres.forEach((c,i)=>{
+      const slot=document.createElement("div");slot.className="slot";slot.onclick=()=>moverLivre(i);
+      if(c)slot.appendChild(botaoCarta(c,selecao?.tipo==="livre"&&selecao.indice===i));else slot.textContent="Livre";
+      topo.appendChild(slot);
+    });
+    const esp=document.createElement("div");esp.className="espacador";topo.appendChild(esp);
+    for(const n of ["S","H","D","C"]) {
+      const slot=document.createElement("div");slot.className="slot";slot.onclick=()=>moverFundacao(n);
+      const c=fundacoes[n].at(-1);
+      if(c){const b=botaoCarta(c,selecao?.tipo==="fundacao"&&selecao.naipe===n);b.onclick=e=>{e.stopPropagation();selecao={tipo:"fundacao",naipe:n};render();};slot.appendChild(b);}
+      else slot.textContent=simbolo[n];
+      topo.appendChild(slot);
+    }
+    mesa.appendChild(topo);
+    const tab=document.createElement("div");tab.className="tableau oito";
+    colunas.forEach((col,ci)=>{
+      const el=document.createElement("div");el.className="coluna";el.onclick=()=>moverColuna(ci);
+      col.forEach((c,i)=>{
+        const b=botaoCarta(c,selecao?.tipo==="coluna"&&selecao.coluna===ci&&i>=selecao.indice);
+        b.style.top=(i*36)+"px";
+        b.onclick=e=>{
+          e.stopPropagation();
+          if(selecao){moverColuna(ci);return;}
+          if(sequenciaValida(col.slice(i))){selecao={tipo:"coluna",coluna:ci,indice:i};status("Carta selecionada.");render();}
+        };
+        b.ondblclick=e=>{e.stopPropagation();selecao={tipo:"coluna",coluna:ci,indice:i};moverFundacao(c.naipe);};
+        el.appendChild(b);
+      });tab.appendChild(el);
+    });mesa.appendChild(tab);
+  }
+  reiniciarAtual=iniciarFreeCell;render();
+}
+
+// ------------------------------- MAHJONG -------------------------------
+function iniciarMahjong() {
+  tituloEl.textContent="Mahjong — Fácil Click";
+  const mesa=estrutura("Encontre duas peças iguais. Remova todos os pares para vencer.");
+  const simbolos=["東","南","西","北","中","發","白","春","夏","秋","冬","梅"];
+  // Cada símbolo aparece duas vezes; o objetivo é localizar todos os pares.
+  const pecas=embaralhar([...simbolos,...simbolos]).map((valor,id)=>({id,valor,removida:false}));
+  let primeira=null,bloqueado=false,jogadas=0;
+  const grade=document.createElement("div");grade.className="grade-mahjong";mesa.appendChild(grade);
+  function render() {
+    grade.innerHTML="";
+    pecas.forEach(p=>{
+      const b=document.createElement("button");b.className="tile"+(p.removida?" removida":"")+(primeira===p.id?" selecionada":"");
+      b.textContent=p.valor;b.disabled=p.removida;b.setAttribute("aria-label",`Peça ${p.valor}`);
+      b.onclick=()=>selecionar(p);grade.appendChild(b);
+    });
+    status(`${pecas.filter(p=>!p.removida).length} peças restantes • ${jogadas} tentativas`);
+  }
+  // Compara a primeira peça selecionada com a segunda. Em caso de erro, aguarda
+  // 700 ms para que o jogador visualize o par antes de desmarcá-lo.
+  function selecionar(p) {
+    if(bloqueado||p.removida)return;
+    if(primeira===null){primeira=p.id;render();return;}
+    if(primeira===p.id){primeira=null;render();return;}
+    jogadas++;const a=pecas.find(x=>x.id===primeira);
+    if(a.valor===p.valor){a.removida=p.removida=true;primeira=null;render();if(pecas.every(x=>x.removida))status(`Parabéns! Você venceu em ${jogadas} tentativas!`);}
+    else {bloqueado=true;render();setTimeout(()=>{primeira=null;bloqueado=false;render();},700);}
+  }
+  reiniciarAtual=iniciarMahjong;render();
+}
+
+// ---------------------------- CAMPO MINADO ----------------------------
+function iniciarCampoMinado() {
+  tituloEl.textContent="Campo Minado — Fácil Click";
+  const mesa=estrutura("Encontre os espaços seguros. Use o modo bandeira para marcar onde você suspeita existir uma mina.");
+  const linhas=9,colunas=9,totalMinas=10;
+  // Cada célula armazena somente estado; a aparência é criada em render().
+  let celulas=Array.from({length:linhas*colunas},(_,i)=>({i,mina:false,aberta:false,bandeira:false,numero:0}));
+  let minasCriadas=false,acabou=false,modoBandeira=false;
+  const controles=document.createElement("div");controles.className="controles-minas";
+  const bandeiraBtn=document.createElement("button");bandeiraBtn.className="acao";bandeiraBtn.textContent="🚩 MODO BANDEIRA: DESLIGADO";
+  bandeiraBtn.onclick=()=>{modoBandeira=!modoBandeira;bandeiraBtn.textContent=`🚩 MODO BANDEIRA: ${modoBandeira?"LIGADO":"DESLIGADO"}`;bandeiraBtn.classList.toggle("modo-ativo",modoBandeira);};
+  controles.appendChild(bandeiraBtn);mesa.appendChild(controles);
+  const grade=document.createElement("div");grade.className="grade-minas";mesa.appendChild(grade);
+  // Converte índice linear em linha/coluna e retorna os vizinhos válidos.
+  const vizinhos=i=>{
+    const r=Math.floor(i/colunas),c=i%colunas,lista=[];
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const nr=r+dr,nc=c+dc;if((dr||dc)&&nr>=0&&nr<linhas&&nc>=0&&nc<colunas)lista.push(nr*colunas+nc);}
+    return lista;
+  };
+  // As minas são criadas somente após o primeiro clique. A primeira célula e
+  // seus vizinhos ficam protegidos, evitando derrota imediata.
+  function criarMinas(primeiro) {
+    const proibidos=new Set([primeiro,...vizinhos(primeiro)]);
+    const possiveis=embaralhar(celulas.map(c=>c.i).filter(i=>!proibidos.has(i)));
+    possiveis.slice(0,totalMinas).forEach(i=>celulas[i].mina=true);
+    celulas.forEach(c=>c.numero=vizinhos(c.i).filter(i=>celulas[i].mina).length);
+    minasCriadas=true;
+  }
+  // Abertura recursiva: células com zero minas próximas expandem a área segura.
+  function abrir(i) {
+    const c=celulas[i];if(acabou||c.aberta||c.bandeira)return;
+    if(!minasCriadas)criarMinas(i);
+    c.aberta=true;
+    if(c.mina){acabou=true;celulas.filter(x=>x.mina).forEach(x=>x.aberta=true);status("A mina explodiu. Clique em NOVO JOGO para tentar novamente.");render();return;}
+    if(c.numero===0)vizinhos(i).forEach(abrir);
+    const segurasAbertas=celulas.filter(x=>x.aberta&&!x.mina).length;
+    if(segurasAbertas===linhas*colunas-totalMinas){acabou=true;celulas.filter(x=>x.mina).forEach(x=>x.bandeira=true);status("Parabéns! Você encontrou todas as áreas seguras!");}
+    render();
+  }
+  // Alterna uma bandeira sem revelar a célula.
+  function marcar(i) {
+    const c=celulas[i];if(acabou||c.aberta)return;c.bandeira=!c.bandeira;render();
+  }
+  function render() {
+    grade.innerHTML="";
+    celulas.forEach(c=>{
+      const b=document.createElement("button");b.className="celula-mina";
+      if(c.aberta){b.classList.add("aberta");if(c.mina){b.classList.add("mina");b.textContent="💣";}else if(c.numero){b.textContent=c.numero;b.classList.add("n"+c.numero);}}
+      else if(c.bandeira)b.textContent="🚩";
+      b.setAttribute("aria-label",c.aberta?(c.mina?"Mina":`Espaço com ${c.numero} minas próximas`):(c.bandeira?"Bandeira":"Espaço fechado"));
+      b.onclick=()=>modoBandeira?marcar(c.i):abrir(c.i);
+      b.oncontextmenu=e=>{e.preventDefault();marcar(c.i);};grade.appendChild(b);
+    });
+    if(!acabou)status(`${celulas.filter(c=>c.bandeira).length} bandeiras • ${totalMinas} minas`);
+  }
+  reiniciarAtual=iniciarCampoMinado;render();
+}
+
+// Tabela de despacho: relaciona o identificador recebido à função inicializadora.
+const INICIADORES={paciencia:iniciarPaciencia,freecell:iniciarFreeCell,mahjong:iniciarMahjong,campo_minado:iniciarCampoMinado};
+(INICIADORES[jogoAtual]||iniciarPaciencia)();
+</script>
+</body>
+</html>
