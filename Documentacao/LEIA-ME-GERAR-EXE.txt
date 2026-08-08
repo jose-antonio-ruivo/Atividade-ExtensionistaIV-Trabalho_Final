@@ -1,0 +1,17 @@
+FACIL CLICK V1.2.5 - GERACAO DO EXE UNICO
+
+1. Extraia toda esta pasta no Windows 10 ou 11.
+2. Execute GERAR_EXE_UNICO.bat.
+3. Ao terminar, o arquivo estara em:
+   dist\Facil_Click_V1_2_5.exe
+
+O executavel inclui Python, bibliotecas, icones e jogos offline.
+Nao sera necessario instalar Python no computador de destino.
+O Windows precisa possuir o Microsoft Edge WebView2 Runtime, normalmente
+ja presente no Windows 10/11 com Microsoft Edge atualizado.
+
+A configuracao do telefone de emergencia sera salva em:
+%APPDATA%\FacilClick\emergencia.txt
+
+Observacao: a primeira abertura pode levar alguns segundos porque o modo
+ONEFILE extrai os componentes para uma pasta temporaria.

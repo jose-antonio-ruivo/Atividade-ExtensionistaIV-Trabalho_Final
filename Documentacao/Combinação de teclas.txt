@@ -1,0 +1,3 @@
+Combinação de teclas para o encerramento do aplicativo fácil click;
+
+CTRL + SHIFT + ALT + E
