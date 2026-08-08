@@ -13,4 +13,5 @@ O vídeo demonstra a execução prática do software e suas principais funcional
 - recursos de acessibilidade;
 - configuração da função de emergência.
 
-O link para o vídeo da apresentação será disponibilizado neste diretório após sua publicação.
+O link para o vídeo:
+https://drive.google.com/file/d/19RCstU-22F_vrLUtri9VkeoGYGrkDPCN/view?usp=sharing
