@@ -2,9 +2,9 @@
 
 ## Trabalho Final da Atividade Extensionista IV
 
-**Curso:** Engenharia da Computação  
-**Universidade:** UNINTER  
-**Aluno:** José Antonio Ruivo  
+**Curso:** Engenharia da Computação
+**Universidade:** UNINTER
+**Aluno:** José Antonio Ruivo
 **RU:** 151561
 
 ---
@@ -19,42 +19,45 @@ O projeto foi desenvolvido durante as Atividades Extensionistas do curso de Enge
 
 ## Principais funcionalidades
 
-- Google
-- Gmail
-- WhatsApp
-- Gov.br
-- Meu INSS
-- YouTube
-- Netflix
-- CNN Brasil
-- Calculadora
-- Bloco de Notas
-- Jogos tradicionais
-- Leitura por voz
-- Alto contraste
-- Data e hora
-- Configuração de emergência
+* Google
+* Gmail
+* WhatsApp
+* Gov.br
+* Meu INSS
+* YouTube
+* Netflix
+* CNN Brasil
+* Calculadora
+* Bloco de Notas
+* Jogos tradicionais
+* Leitura por voz
+* Alto contraste
+* Data e hora
+* Configuração de emergência
 
 ---
 
 ## Tecnologias utilizadas
 
-- Python 3
-- Tkinter
-- Pillow
-- pyttsx3
-- PyInstaller
+* Python 3
+* Tkinter
+* Pillow
+* pyttsx3
+* PyInstaller
 
 ---
 
-## Estrutura do projeto
+## Estrutura do repositório
 
-```text
-Documentacao/
-Codigo_Fonte/
-Imagens/
-Video/
-```
+* [Código-fonte](./Codigo_Fonte)
+* [Documentação](./Documentacao)
+* [Imagens](./Imagens)
+* [Vídeo](./Video)
+* [Executável](./Executavel)
+
+### Versão final apresentada
+
+**Fácil Click V1.2.5**
 
 ---
 
@@ -68,19 +71,18 @@ Para preservar a privacidade dos participantes, não foram realizados registros 
 
 Os feedbacks obtidos durante a demonstração foram positivos, destacando principalmente:
 
-- facilidade de navegação;
-- boa organização visual;
-- botões de fácil identificação;
-- textos legíveis;
-- simplicidade de utilização.
+* facilidade de navegação;
+* boa organização visual;
+* botões de fácil identificação;
+* textos legíveis;
+* simplicidade de utilização.
 
 ---
 
 ## Demonstração
 
 **Vídeo:**
-
-*(Inserir posteriormente o link do vídeo de apresentação.)*
+https://drive.google.com/file/d/19RCstU-22F_vrLUtri9VkeoGYGrkDPCN/view?usp=sharing
 
 ---
 
